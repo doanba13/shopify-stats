@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { DatePicker, DatePickerInput } from '@mantine/dates';
+import { DatePickerInput } from '@mantine/dates';
 import { Container, Title, Loader, Select, Group, SimpleGrid, Card, Text, Button } from '@mantine/core';
 import dayjs from 'dayjs';
 import { useContributionMargin } from './api/useContributionMargin';
@@ -46,7 +46,7 @@ export default function App() {
   }
 
   return (
-    <Container size="lg">
+    <Container size="lg" className="mb-8 pb-8">
       <Group justify="space-between" align="center" my="md">
         <Title order={2}>Shopify Orders Stats</Title>
         <Button
@@ -81,14 +81,21 @@ export default function App() {
         <>
           {/* KPI Cards */}
           {(() => {
-            const metrics = calculateMetrics(data.result);
+            const metrics = calculateMetrics(data.result, data.newCustomer || []);
             return (
-              <SimpleGrid cols={4} mt="lg">
-                <MetricCard label="Contribution Margin" value={`$${metrics.contributionMargin.toFixed(2)} (${metrics.contributionMarginRatio.toFixed(1)}%)`} />
-                <MetricCard label="Gross Profit" value={`$${metrics.grossProfit.toFixed(2)} (${metrics.grossProfitRatio.toFixed(1)}%)`} />
-                <MetricCard label="MER" value={metrics.mer.toFixed(2)} />
-                <MetricCard label="AOV" value={`$${metrics.aov.toFixed(2)}`} />
-              </SimpleGrid>
+              <>
+                <SimpleGrid cols={4} mt="lg">
+                  <MetricCard label="Contribution Margin" value={`$${metrics.contributionMargin.toFixed(2)} (${metrics.contributionMarginRatio.toFixed(1)}%)`} />
+                  <MetricCard label="Gross Profit" value={`$${metrics.grossProfit.toFixed(2)} (${metrics.grossProfitRatio.toFixed(1)}%)`} />
+                  <MetricCard label="MER" value={metrics.mer.toFixed(2)} />
+                  <MetricCard label="AOV" value={`$${metrics.aov.toFixed(2)}`} />
+                  
+                </SimpleGrid>
+                <SimpleGrid cols={4} mt="lg">
+                  <MetricCard label="ADS" value={`$${metrics.ads.toFixed(2)}`} />
+                 <MetricCard label="CAC" value={`$${metrics.cac.toFixed(2)}`} />
+                </SimpleGrid>
+              </>
             );
           })()}
 

@@ -6,12 +6,16 @@ export interface DailyStats {
   revenue: number;
   spend: number;
   orders: number;
+  newRevenue: number;
+  newOrder: number;
+  newSpend: number;
   ads: number;
 }
 
 export interface OrdersStatsResponse {
   result: Record<string, DailyStats>;
   orders: any[];
+  newCustomer: any[];
 }
 
 export const useContributionMargin = (startDate: number, endDate?: number, app?: string) => {
@@ -30,7 +34,8 @@ export const useContributionMargin = (startDate: number, endDate?: number, app?:
       for (const [date, stats] of Object.entries(data.result)) {
         transformedResult[date] = {
           ...stats,
-          revenue: stats.revenue * 1.15 // convert to USD
+          revenue: stats.revenue * 1.15, // convert to USD
+          newRevenue: stats.newRevenue * 1.15
         };
       }
 
