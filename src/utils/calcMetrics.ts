@@ -3,10 +3,13 @@ export interface DailyStats {
   revenue: number;
   spend: number;
   orders: number;
+  newOrder: number;
+  newRevenue: number;
+  newSpend: number;
   ads: number;
 }
 
-export function calculateMetrics(data: Record<string, DailyStats>) {
+export function calculateMetrics(data: Record<string, DailyStats>, customer: Record<string, any>[]) {
   const days = Object.values(data);
 
   const totals = days.reduce(
@@ -26,6 +29,7 @@ export function calculateMetrics(data: Record<string, DailyStats>) {
   const grossProfit = totals.revenue - totals.spend;
   const mer = totals.spend > 0 ? totals.revenue / totals.ads : 0;
   const aov = totals.orders > 0 ? totals.revenue / totals.orders : 0;
+  const cac = totals.ads > 0 && customer.length > 0 ? totals.ads / customer.length : 0;
 
   return {
     contributionMargin,
@@ -33,6 +37,8 @@ export function calculateMetrics(data: Record<string, DailyStats>) {
     grossProfit,
     grossProfitRatio: totals.revenue > 0 ? (grossProfit / totals.revenue) * 100 : 0,
     mer,
-    aov
+    aov,
+    cac,
+    ads: totals.ads || 0
   };
 }
