@@ -1,6 +1,9 @@
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
+import timezone from "dayjs/plugin/timezone";
+
 dayjs.extend(utc);
+dayjs.extend(timezone);
 
 
 export type DailyStats = {
@@ -56,20 +59,16 @@ export const orderRevenueUSD = (o: Order, eurToUsd = 1.15) =>
 export const orderSpend = (o: Order) => Number(o.base || 0);
 
 const ddmmyyyy = (iso: string, app?: string) => {
-    const base = dayjs.utc(iso).unix();
+  const zones: Record<string, string> = {
+    Paradis: "Europe/Amsterdam",   // +1/+2 DST
+    Persoliebe: "Etc/GMT+8",       // UTC-8
+  };
 
-    let date = base;
-    switch (app) {
-        case 'Paradis':
-            date += 60 * 60;
-            break;
-        case 'Persoliebe':
-            date -= 8 * 60 * 60
-            break;
-    }
+  const zone = zones[app || ''] || "UTC";
 
-    return dayjs.unix(date).utc().format('DD-MM-YYYY')
+  return dayjs(iso).tz(zone).format("DD-MM-YYYY");
 };
+
 
 export function groupByDay(
   days: Record<string, DailyStats>,
