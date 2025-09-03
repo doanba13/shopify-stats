@@ -51,17 +51,14 @@ export type Order = {
 
 // ---- helpers ----
 export const fmtMoney = (v: number) => `$${v.toFixed(2)}`;
-export const orderRevenueUSD = (o: Order, eurToUsd = 1.15) =>
-  o.revenueUSD && !isNaN(Number(o.revenueUSD))
-    ? Number(o.revenueUSD)
-    : Number(o.revenue || 0) * eurToUsd;
-
 export const orderSpend = (o: Order) => Number(o.base || 0);
 
 const ddmmyyyy = (iso: string, app?: string) => {
   const zones: Record<string, string> = {
     Paradis: "Europe/Amsterdam",   // +1/+2 DST
-    Persoliebe: "Etc/GMT+8",       // UTC-8
+    // Persoliebe: "Etc/GMT+8",       // UTC-8
+    Persoliebe: "Pacific/Pitcairn",       // UTC-8
+
   };
 
   const zone = zones[app || ''] || "UTC";
@@ -75,11 +72,12 @@ export function groupByDay(
   orders: Order[]
 ): Array<{ stats: DailyStats; orders: Order[] }> {
   const map: Record<string, { stats: DailyStats; orders: Order[] }> = {};
-  for (const [k, stats] of Object.entries(days)) map[k] = { stats, orders: [] };
+  for (const [k, stats] of Object.entries(days)) map[k] = { stats: { ...stats }, orders: [] };
   for (const o of orders) {
     const d = ddmmyyyy(o.createdAt, o.app);
     if (!map[d]) map[d] = { stats: { date: d, revenue: 0, spend: 0, orders: 0, ads: 0 }, orders: [] };
     map[d].orders.push(o);
+    map[d].stats.spend -= o.shipDiscount || 0;
   }
   return Object.values(map).sort(
     (a, b) =>
