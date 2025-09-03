@@ -7,10 +7,34 @@ import {
   Tooltip,
   Legend
 } from 'chart.js';
-import type { DailyStats } from '../utils/calcMetrics';
+import { AFTER_VAR_FEE, type DailyStats } from '../utils/calcMetrics';
 import { SimpleGrid, Card, Title } from '@mantine/core';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
+
+function createOption(unit: string) {
+  return {
+    responsive: true,
+    plugins: {
+      tooltip: {
+        callbacks: {
+          label: (context: any) => {
+            const value = context.raw;
+            const v = context.dataset.label.split('(').reverse().pop();
+            return `${v}: ${value.toFixed(2)}${unit}`;
+          }
+        }
+      }
+    },
+    scales: {
+      y: {
+        ticks: {
+          callback: (value: any) => `${Number(value).toFixed(2)}${unit}`
+        }
+      }
+    }
+  };
+}
 
 function createBarData(data: Record<string, DailyStats>, field: keyof DailyStats, label: string, color: string) {
   const sorted = Object.values(data).sort((a, b) => {
@@ -30,7 +54,6 @@ function createBarData(data: Record<string, DailyStats>, field: keyof DailyStats
     ]
   };
 }
-
 function createAOVBarData(data: Record<string, DailyStats>) {
   const sorted = Object.values(data).sort((a, b) => {
     const da = new Date(a.date).getTime();
@@ -38,27 +61,47 @@ function createAOVBarData(data: Record<string, DailyStats>) {
     return da - db;
   });
 
+  // Tổng cho toàn kỳ
+  const totalRevenue = sorted.reduce((s, d) => s + (d.revenue || 0), 0);
+  const totalOrders = sorted.reduce((s, d) => s + (d.orders || 0), 0);
+
+  const totalNewRevenue = sorted.reduce((s, d) => s + (d.newRevenue || 0), 0);
+  const totalNewOrders = sorted.reduce((s, d) => s + (d.newOrder || 0), 0);
+
+  const totalOldRevenue = totalRevenue - totalNewRevenue;
+  const totalOldOrders = totalOrders - totalNewOrders;
+
+  // AOV tổng kỳ
+  const aovTotal = totalOrders > 0 ? (totalRevenue / totalOrders).toFixed(2) : "0.00";
+  const aovNew = totalNewOrders > 0 ? (totalNewRevenue / totalNewOrders).toFixed(2) : "0.00";
+  const aovOld = totalOldOrders > 0 ? (totalOldRevenue / totalOldOrders).toFixed(2) : "0.00";
+
   return {
     labels: sorted.map(d => d.date),
     datasets: [
       {
-        label: 'AOV',
-        data: sorted.map(d => Number(d.revenue / d.orders)),
+        label: `AOV (${aovTotal}$)`,
+        data: sorted.map(d => d.orders > 0 ? Number(d.revenue / d.orders) : 0),
         backgroundColor: '#A7C7E7'
       },
       {
-        label: 'New Customer AOV',
-        data: sorted.map(d => Number(d.newRevenue / d.newOrder)),
+        label: `New Customer AOV (${aovNew}$)`,
+        data: sorted.map(d => d.newOrder > 0 ? Number(d.newRevenue / d.newOrder) : 0),
         backgroundColor: '#B5EAD7'
       },
       {
-        label: 'Old Customer AOV',
-        data: sorted.map(d => Number((d.revenue - d.newRevenue) / (d.orders - d.newOrder))),
+        label: `Old Customer AOV (${aovOld}$)`,
+        data: sorted.map(d => {
+          const rv = (d.revenue || 0) - (d.newRevenue || 0);
+          const od = (d.orders || 0) - (d.newOrder || 0);
+          return od > 0 ? rv / od : 0;
+        }),
         backgroundColor: '#FFD6A5'
       }
     ]
   };
 }
+
 
 function createOrdersBarData(data: Record<string, DailyStats>) {
   const sorted = Object.values(data).sort((a, b) => {
@@ -67,16 +110,21 @@ function createOrdersBarData(data: Record<string, DailyStats>) {
     return da - db;
   });
 
+  const newOd = sorted.reduce((n, s) => n += s.newOrder || 0, 0);
+  const total = sorted.reduce((t, s) => t += s.orders || 0, 0);
+  const newPercent = total > 0 ? (newOd / total * 100).toFixed(2) : 0;
+  const oldPercent = (100 - Number(newPercent)).toFixed(2)
+
   return {
     labels: sorted.map(d => d.date),
     datasets: [
       {
-        label: 'New Customer orders (%)',
+        label: `New Customer orders (${newPercent}%)`,
         data: sorted.map(d => Number(d.newOrder / d.orders) * 100),
         backgroundColor: '#FFB5A7'
       },
       {
-        label: 'Old Customer orders (%)',
+        label: `Old Customer orders (${oldPercent}%)`,
         data: sorted.map(d => {
           const or = Number((d.orders - d.newOrder));
           return d.orders > 0 ? or / d.orders * 100 : 0
@@ -94,30 +142,60 @@ function createGrossProfitMgBarData(data: Record<string, DailyStats>) {
     return da - db;
   });
 
+  // Tổng cho toàn kỳ
+  const totalRevenue = sorted.reduce((s, d) => s + (d.revenue || 0), 0);
+  const totalSpend = sorted.reduce((s, d) => s + (d.spend || 0), 0);
+
+  const totalNewRevenue = sorted.reduce((s, d) => s + (d.newRevenue || 0), 0);
+  const totalNewSpend = sorted.reduce((s, d) => s + (d.newSpend || 0), 0);
+
+  const totalOldRevenue = totalRevenue - totalNewRevenue;
+  const totalOldSpend = totalSpend - totalNewSpend;
+
+  // % GP tổng kỳ theo revenue-weighted
+  const gpTotalPct = totalRevenue > 0
+    ? (((totalRevenue * AFTER_VAR_FEE) - totalSpend) / totalRevenue * 100).toFixed(2)
+    : "0.00";
+
+  const gpNewPct = totalNewRevenue > 0
+    ? (((totalNewRevenue * AFTER_VAR_FEE) - totalNewSpend) / totalNewRevenue * 100).toFixed(2)
+    : "0.00";
+
+  const gpOldPct = totalOldRevenue > 0
+    ? ((((totalOldRevenue) * AFTER_VAR_FEE) - (totalOldSpend)) / (totalOldRevenue) * 100).toFixed(2)
+    : "0.00";
+
   return {
     labels: sorted.map(d => d.date),
     datasets: [
       {
-        label: 'GP (%)',
-        data: sorted.map(d => Number(d.revenue ? (d.revenue - d.spend) / d.revenue * 100 : 0)),
+        label: `GP (${gpTotalPct}%)`,
+        data: sorted.map(d =>
+          Number(d.revenue ? ((d.revenue * AFTER_VAR_FEE - d.spend) / d.revenue) * 100 : 0)
+        ),
         backgroundColor: '#D7BDE2'
       },
       {
-        label: 'New Customer GP (%)',
-        data: sorted.map(d => Number(d.newRevenue ? (d.newRevenue - d.newSpend) / d.newRevenue * 100 : 0)),
+        label: `New Customer GP (${gpNewPct}%)`,
+        data: sorted.map(d =>
+          Number(d.newRevenue ? ((d.newRevenue * AFTER_VAR_FEE - d.newSpend) / d.newRevenue) * 100 : 0)
+        ),
         backgroundColor: '#A3E4D7'
       },
       {
-        label: 'Old Customer GP (%)',
+        label: `Old Customer GP (${gpOldPct}%)`,
         data: sorted.map(d => {
-          const gp = Number((d.revenue - d.newRevenue) - (d.spend - d.newSpend));
-          return d.revenue - d.newRevenue > 0 ? gp / (d.revenue - d.newRevenue) * 100 : 0;
+          const rv = Number((d.revenue || 0) - (d.newRevenue || 0));
+          const sp = Number((d.spend || 0) - (d.newSpend || 0));
+          const gp = rv * AFTER_VAR_FEE - sp;
+          return rv > 0 ? (gp / rv) * 100 : 0;
         }),
         backgroundColor: '#F5B7B1'
       }
     ]
   };
 }
+
 
 
 
@@ -145,15 +223,15 @@ export function DetailCharts({ data }: { data: Record<string, DailyStats> }) {
       <SimpleGrid cols={1} mt="lg">
         <Card padding="md">
           <Title order={5}>AOV</Title>
-          <Bar data={createAOVBarData(data)} />
+          <Bar data={createAOVBarData(data)} options={createOption('$')}/>
         </Card>
         <Card padding="md">
           <Title order={5}>Orders (%)</Title>
-          <Bar data={createOrdersBarData(data)} />
+          <Bar data={createOrdersBarData(data)} options={createOption('%')}/>
         </Card>
         <Card padding="md">
           <Title order={5}>Gross Profit Margin Ratio (%)</Title>
-          <Bar data={createGrossProfitMgBarData(data)} />
+          <Bar data={createGrossProfitMgBarData(data)} options={createOption('%')}/>
         </Card>
       </SimpleGrid>
     </>

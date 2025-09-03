@@ -1,3 +1,5 @@
+import type { Order, OrderItem } from "./individualOrderStats";
+
 export interface DailyStats {
   date: string;
   revenue: number;
@@ -11,7 +13,7 @@ export interface DailyStats {
 
 export const AFTER_VAR_FEE = 0.95;
 
-export function calculateMetrics(data: Record<string, DailyStats>, customer: Record<string, any>[]) {
+export function calculateMetrics(data: Record<string, DailyStats>, customer: Record<string, any>[], orders: Order[]) {
   const days = Object.values(data);
 
   const totals = days.reduce(
@@ -25,10 +27,10 @@ export function calculateMetrics(data: Record<string, DailyStats>, customer: Rec
     { revenue: 0, spend: 0, orders: 0, ads: 0 }
   );
 
-  console.log(totals)
+  const shipDeduction = orders.reduce((pr, c) => pr += (c.shipDiscount || 0), 0)
 
-  const contributionMargin = totals.revenue * AFTER_VAR_FEE - totals.spend - totals.ads;
-  const grossProfit = totals.revenue * AFTER_VAR_FEE - totals.spend;
+  const contributionMargin = totals.revenue * AFTER_VAR_FEE - (totals.spend - shipDeduction) - totals.ads;
+  const grossProfit = totals.revenue * AFTER_VAR_FEE - (totals.spend - shipDeduction);
   const mer = totals.spend > 0 ? totals.revenue / totals.ads : 0;
   const aov = totals.orders > 0 ? totals.revenue / totals.orders : 0;
   const cac = totals.ads > 0 && customer.length > 0 ? totals.ads / customer.length : 0;

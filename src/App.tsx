@@ -81,7 +81,7 @@ export default function App() {
         <>
           {/* KPI Cards */}
           {(() => {
-            const metrics = calculateMetrics(data.result, data.newCustomer || []);
+            const metrics = calculateMetrics(data.result, data.newCustomer || [], data.orders || []);
             return (
               <>
                 <SimpleGrid cols={4} mt="lg">
