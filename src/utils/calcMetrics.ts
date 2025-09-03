@@ -1,4 +1,4 @@
-import type { Order, OrderItem } from "./individualOrderStats";
+import type { Order } from "./individualOrderStats";
 
 export interface DailyStats {
   date: string;

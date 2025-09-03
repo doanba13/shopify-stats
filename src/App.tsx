@@ -20,6 +20,8 @@ export default function App() {
   const startDate = value[0] ? dayjs.utc(value[0]).unix() : 0;
   const endDate = value[1] ? dayjs.utc(value[1]).unix() : undefined;
 
+  console.log(value)
+
   const { data, isLoading } = useContributionMargin(startDate, endDate, app || undefined);
 
   const [view, setView] = useState<'chart' | 'table' | 'detail'>('chart');
@@ -59,7 +61,7 @@ export default function App() {
       </Group>
 
       <Group grow>
-        <DatePickerInput type="range" allowSingleDateInRange value={value} onChange={setValue} />
+        <DatePickerInput type="range" allowSingleDateInRange value={value} onChange={setValue} maxDate={new Date()}/>
       </Group>
 
       <Select
