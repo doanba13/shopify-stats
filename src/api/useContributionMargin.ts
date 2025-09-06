@@ -35,7 +35,8 @@ export const useContributionMargin = (startDate: number, endDate?: number, app?:
         transformedResult[date] = {
           ...stats,
           revenue: stats.revenue * 1.15, // convert to USD
-          newRevenue: stats.newRevenue * 1.15
+          newRevenue: stats.newRevenue * 1.15,
+          newSpend: stats.newSpend == null ? 0 : stats.revenue === stats.newRevenue ? stats.spend : stats.newSpend
         };
       }
 

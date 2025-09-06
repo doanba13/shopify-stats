@@ -50,7 +50,7 @@ export type Order = {
 };
 
 // ---- helpers ----
-export const fmtMoney = (v: number) => `$${v.toFixed(2)}`;
+export const fmtMoney = (v: number) => v ? `$${v.toFixed(2)}` : v;
 export const orderSpend = (o: Order) => Number(o.base || 0);
 
 const ddmmyyyy = (iso: string, app?: string) => {
@@ -77,7 +77,6 @@ export function groupByDay(
     const d = ddmmyyyy(o.createdAt, o.app);
     if (!map[d]) map[d] = { stats: { date: d, revenue: 0, spend: 0, orders: 0, ads: 0 }, orders: [] };
     map[d].orders.push(o);
-    map[d].stats.spend -= o.shipDiscount || 0;
   }
   return Object.values(map).sort(
     (a, b) =>
