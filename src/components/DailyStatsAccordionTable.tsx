@@ -2,7 +2,7 @@ import { Accordion, Badge, Card, Group, Text, Table, Stack, Divider, Popover } f
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import { fmtMoney, fmtPct, groupByDay, orderSpend, type DailyStats, type Order } from '../utils/individualOrderStats';
-import { AFTER_VAR_FEE } from '../utils/calcMetrics';
+import { AFTER_VAR_FEE, USD_RATE } from '../utils/calcMetrics';
 dayjs.extend(utc);
 
 
@@ -61,7 +61,7 @@ export function DailyStatsAccordionTable({
                       </Table.Thead>
                       <Table.Tbody>
                         {orders.map((o) => {
-                          const usd = Number(o.revenue);
+                          const usd = Number(o.revenue) * USD_RATE;
                           const sp = orderSpend(o);
                           const gp = usd * AFTER_VAR_FEE - sp;
                           const gpr = usd > 0 ? gp / usd : 0;

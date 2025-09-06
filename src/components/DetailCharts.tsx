@@ -142,6 +142,8 @@ function createGrossProfitMgBarData(data: Record<string, DailyStats>) {
     return da - db;
   });
 
+  console.log(sorted)
+
   // Tổng cho toàn kỳ
   const totalRevenue = sorted.reduce((s, d) => s + (d.revenue || 0), 0);
   const totalSpend = sorted.reduce((s, d) => s + (d.spend || 0), 0);
@@ -154,15 +156,15 @@ function createGrossProfitMgBarData(data: Record<string, DailyStats>) {
 
   // % GP tổng kỳ theo revenue-weighted
   const gpTotalPct = totalRevenue > 0
-    ? (((totalRevenue * AFTER_VAR_FEE) - totalSpend) / totalRevenue * 100).toFixed(2)
+    ? ((totalRevenue * AFTER_VAR_FEE - totalSpend)/ totalRevenue * 100).toFixed(2)
     : "0.00";
 
   const gpNewPct = totalNewRevenue > 0
-    ? (((totalNewRevenue * AFTER_VAR_FEE) - totalNewSpend) / totalNewRevenue * 100).toFixed(2)
+    ? ((totalNewRevenue * AFTER_VAR_FEE - totalNewSpend)/ totalNewRevenue * 100).toFixed(2)
     : "0.00";
 
   const gpOldPct = totalOldRevenue > 0
-    ? ((((totalOldRevenue) * AFTER_VAR_FEE) - (totalOldSpend)) / (totalOldRevenue) * 100).toFixed(2)
+    ? (((totalOldRevenue * AFTER_VAR_FEE) - (totalOldSpend))/ totalOldRevenue * 100).toFixed(2)
     : "0.00";
 
   return {
