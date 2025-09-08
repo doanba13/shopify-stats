@@ -1,5 +1,3 @@
-import type { Order } from "./individualOrderStats";
-
 export interface DailyStats {
   date: string;
   revenue: number;
@@ -14,7 +12,7 @@ export interface DailyStats {
 export const AFTER_VAR_FEE = 0.945;
 export const USD_RATE = 1.15;
 
-export function calculateMetrics(data: Record<string, DailyStats>, customer: Record<string, any>[], _orders: Order[]) {
+export function calculateMetrics(data: Record<string, DailyStats>, customer: Record<string, any>[]) {
   const days = Object.values(data);
 
   const totals = days.reduce(
