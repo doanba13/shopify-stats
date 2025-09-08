@@ -42,6 +42,6 @@ export const useContributionMargin = (startDate: number, endDate?: number, app?:
 
       return { ...data, result: transformedResult };
     },
-    enabled: !!startDate && !!endDate,
+    enabled: !!startDate && !!endDate && startDate != 0 && endDate != 0,
   });
 };

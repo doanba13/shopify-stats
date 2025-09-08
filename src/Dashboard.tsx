@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { DatePickerInput } from '@mantine/dates';
-import { Container, Title, Loader, Select, Group, SimpleGrid, Card, Text, Button } from '@mantine/core';
+import { Container, Title, Loader, Select, Group, SimpleGrid, Button } from '@mantine/core';
 import dayjs from 'dayjs';
-import { useContributionMargin } from './api/useContributionMargin';
+import { useContributionMargin, type OrdersStatsResponse } from './api/useContributionMargin';
 import { calculateMetrics } from './utils/calcMetrics';
 import { MetricsChart } from './components/MetricsChart';
 import { DetailCharts } from './components/DetailCharts';
@@ -11,6 +11,8 @@ import utc from 'dayjs/plugin/utc';
 import { useSyncOrders } from './api/useSyncOrders';
 import { notifications } from '@mantine/notifications';
 import { IconRefresh } from '@tabler/icons-react';
+import { usePreviousContributionMargin } from './api/usePreviousContributionMargin';
+import { MetricCard } from './components/MetricCard';
 dayjs.extend(utc);
 
 export default function Dashboard() {
@@ -21,6 +23,7 @@ export default function Dashboard() {
   const endDate = value[1] ? dayjs.utc(value[1]).unix() : undefined;
 
   const { data, isLoading } = useContributionMargin(startDate, endDate, app || undefined);
+  const { data: previousData, isLoading: preLoading } = usePreviousContributionMargin(startDate, endDate, app || undefined);
 
   const [view, setView] = useState<'chart' | 'table' | 'detail'>('chart');
 
@@ -75,38 +78,18 @@ export default function Dashboard() {
         mt="sm"
       />
 
-      {isLoading && <div className='loading-container'><Loader mt="lg" /></div>}
+      {isLoading || preLoading && <div className='loading-container'><Loader mt="lg" /></div>}
 
-      {data && (
+      {data && previousData && (
         <>
-          {/* KPI Cards */}
-          {(() => {
-            const metrics = calculateMetrics(data.result, data.newCustomer || [], data.orders || []);
-            return (
-              <>
-                <SimpleGrid cols={4} mt="lg">
-                  <MetricCard label="Contribution Margin" value={`$${metrics.contributionMargin.toFixed(2)} (${metrics.contributionMarginRatio.toFixed(1)}%)`} />
-                  <MetricCard label="Gross Profit" value={`$${metrics.grossProfit.toFixed(2)} (${metrics.grossProfitRatio.toFixed(1)}%)`} />
-                  <MetricCard label="MER" value={metrics.mer.toFixed(2)} />
-                  <MetricCard label="AOV" value={`$${metrics.aov.toFixed(2)}`} />
+          <KPICards data={data} prev={previousData} />
 
-                </SimpleGrid>
-                <SimpleGrid cols={4} mt="lg">
-                  <MetricCard label="ADS" value={`$${metrics.ads.toFixed(2)}`} />
-                  <MetricCard label="CAC" value={`$${metrics.cac.toFixed(2)}`} />
-                </SimpleGrid>
-              </>
-            );
-          })()}
-
-          {/* View toggle */}
           <Group mt="md">
             <Button variant={view === 'chart' ? 'filled' : 'light'} onClick={() => setView('chart')}>Chart</Button>
             <Button variant={view === 'table' ? 'filled' : 'light'} onClick={() => setView('table')}>Table</Button>
             <Button variant={view === 'detail' ? 'filled' : 'light'} onClick={() => setView('detail')}>Detail</Button>
           </Group>
 
-          {/* Conditional view */}
           {view === 'chart' && <MetricsChart data={data.result} />}
           {view === 'table' && (
             <DailyStatsAccordionTable
@@ -121,11 +104,59 @@ export default function Dashboard() {
   );
 }
 
-function MetricCard({ label, value }: { label: string; value: string }) {
+
+const KPICards = ({ data, prev }: { data: OrdersStatsResponse, prev: OrdersStatsResponse }) => {
+  const metrics = calculateMetrics(data.result, data.newCustomer || []);
+  const prevMetrics = calculateMetrics(prev.result, prev.newCustomer || []);
+
   return (
-    <Card shadow="sm" padding="lg">
-      <Text size="sm" c="dimmed">{label}</Text>
-      <Title order={3}>{value}</Title>
-    </Card>
+    <>
+      <SimpleGrid cols={{ base: 1, sm: 1, md: 4 }} mt="lg" spacing="lg">
+        <MetricCard
+          label="Contr. Margin"
+          value={metrics.contributionMargin}
+          previous={prevMetrics.contributionMargin}
+          percent={metrics.contributionMarginRatio}
+          prePercent={prevMetrics.contributionMarginRatio}
+          format={(v) => `$${v.toFixed(2)} (${metrics.contributionMarginRatio.toFixed(1)}%)`}
+        />
+        <MetricCard
+          label="Gross Profit"
+          value={metrics.grossProfit}
+          previous={prevMetrics.grossProfit}
+          percent={metrics.grossProfitRatio}
+          prePercent={prevMetrics.grossProfitRatio}
+          format={(v) => `$${v.toFixed(2)} (${metrics.grossProfitRatio.toFixed(1)}%)`}
+        />
+        <MetricCard
+          label="MER"
+          value={metrics.mer}
+          previous={prevMetrics.mer}
+          format={(v) => v.toFixed(2)}
+        />
+        <MetricCard
+          label="AOV"
+          value={metrics.aov}
+          previous={prevMetrics.aov}
+          format={(v) => `$${v.toFixed(2)}`}
+        />
+      </SimpleGrid>
+
+      <SimpleGrid cols={{ base: 1, sm: 1, md: 4 }} mt="lg" spacing="lg">
+        <MetricCard
+          label="ADS"
+          value={metrics.ads}
+          previous={prevMetrics.ads}
+          format={(v) => `$${v.toFixed(2)}`}
+        />
+        <MetricCard
+          reverse
+          label="CAC"
+          value={metrics.cac}
+          previous={prevMetrics.cac}
+          format={(v) => `$${v.toFixed(2)}`}
+        />
+      </SimpleGrid>
+    </>
   );
 }
